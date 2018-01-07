@@ -49,7 +49,13 @@ RUN { \
 	} | debconf-set-selections \
 	&& apt-get update \
 	&& apt-get install -y mysql-server \
-				vim git htop aptitude x11-common mysql-workbench x11-apps
+				vim git htop aptitude x11-common mysql-workbench x11-apps \
+# comment out a few problematic configuration values
+	&& find /etc/mysql/ -name '*.cnf' -print0 \
+		| xargs -0 grep -lZE '^(bind-address|log)' \
+		| xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/' \
+# don't reverse lookup hostnames, they are usually another container
+	&& echo '[mysqld]\nskip-host-cache\nskip-name-resolve' > /etc/mysql/conf.d/docker.cnf
 
 RUN : \
  && mysqld_safe & : \
@@ -58,13 +64,6 @@ RUN : \
  && :
  
 RUN rm -rf /var/lib/apt/lists/*
-    
-# comment out a few problematic configuration values
-	&& find /etc/mysql/ -name '*.cnf' -print0 \
-		| xargs -0 grep -lZE '^(bind-address|log)' \
-		| xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/' \
-# don't reverse lookup hostnames, they are usually another container
-	&& echo '[mysqld]\nskip-host-cache\nskip-name-resolve' > /etc/mysql/conf.d/docker.cnf
 
 EXPOSE 22 3306
 CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisor/supervisord.conf"]
