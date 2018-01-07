@@ -36,15 +36,36 @@ RUN echo "[supervisord]" > /etc/supervisor/conf.d/docker.conf \
     && echo "command=/usr/sbin/sshd -D" >> /etc/supervisor/conf.d/docker.conf\
     && echo "[program:mysqld_safe]" >> /etc/supervisor/conf.d/docker.conf \
     && echo "command=mysqld_safe" >> /etc/supervisor/conf.d/docker.conf
+
+
+# mysql
+RUN { \
+		echo mysql-community-server mysql-community-server/data-dir select ''; \
+		echo mysql-community-server mysql-community-server/root-pass password ''; \
+		echo mysql-community-server mysql-community-server/re-root-pass password ''; \
+		echo mysql-community-server mysql-community-server/remove-test-db select false; \
+		echo mysql-server mysql-server/root_password password root; \
+		echo mysql-server mysql-server/root_password_again password root; \		
+	} | debconf-set-selections \
+	&& apt-get update 
+	&& apt-get install -y mysql-server \
+				vim git htop aptitude x11-common mysql-workbench x11-apps
+
+RUN : \
+ && mysqld_safe & : \
+ && sleep 10 \
+ && echo "grant all on *.* to root@'localhost' identified by 'root' with grant option" | mysql -uroot -proot \
+ && :
+ 
+RUN rm -rf /var/lib/apt/lists/*
     
 # comment out a few problematic configuration values
+	&& find /etc/mysql/ -name '*.cnf' -print0 \
+		| xargs -0 grep -lZE '^(bind-address|log)' \
+		| xargs -rt -0 sed -Ei 's/^(bind-address|log)/#&/' \
 # don't reverse lookup hostnames, they are usually another container
-RUN sed -Ei 's/^(bind-address|log)/#&/' /etc/mysql/my.cnf \
-	&& echo '[mysqld]\nskip-host-cache\nskip-name-resolve' > /etc/mysql/my.cnf
+	&& echo '[mysqld]\nskip-host-cache\nskip-name-resolve' > /etc/mysql/conf.d/docker.cnf
 
 EXPOSE 22 3306
 CMD ["/usr/bin/supervisord", "--configuration=/etc/supervisor/supervisord.conf"]
 
-# mysql
-RUN apt-get install -y vim git htop aptitude \
- x11-common mysql-server mysql-workbench x11-apps
