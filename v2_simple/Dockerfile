@@ -47,7 +47,7 @@ RUN { \
 		echo mysql-server mysql-server/root_password password root; \
 		echo mysql-server mysql-server/root_password_again password root; \		
 	} | debconf-set-selections \
-	&& apt-get update 
+	&& apt-get update \
 	&& apt-get install -y mysql-server \
 				vim git htop aptitude x11-common mysql-workbench x11-apps
 
