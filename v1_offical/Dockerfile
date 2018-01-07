@@ -18,6 +18,7 @@ RUN set -x \
       byobu \
       zsh \
       cron \
+      lrzsz \
 	# 准备环境
 	&& mkdir -p \
 			/var/run/sshd \

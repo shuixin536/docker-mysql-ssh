@@ -49,7 +49,7 @@ RUN { \
 	} | debconf-set-selections \
 	&& apt-get update \
 	&& apt-get install -y mysql-server \
-				vim git htop aptitude x11-common mysql-workbench x11-apps \
+				vim git htop aptitude x11-common mysql-workbench x11-apps lrzsz \
 # comment out a few problematic configuration values
 	&& find /etc/mysql/ -name '*.cnf' -print0 \
 		| xargs -0 grep -lZE '^(bind-address|log)' \
@@ -60,7 +60,7 @@ RUN { \
 RUN : \
  && mysqld_safe & : \
  && sleep 10 \
- && echo "grant all on *.* to root@'localhost' identified by 'root' with grant option" | mysql -uroot -proot \
+ && echo "grant all privileges on *.* to 'root'@'%' identified by 'root' with grant option;" | mysql -uroot -proot \
  && :
  
 RUN rm -rf /var/lib/apt/lists/*
